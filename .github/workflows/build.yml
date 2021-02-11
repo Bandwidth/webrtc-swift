@@ -1,0 +1,46 @@
+name: Build WebRTC
+on:
+  workflow_dispatch:
+    inputs:
+      hash:
+        description: 'WebRTC hash'
+        required: true
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HASH: ${{ github.event.inputs.hash }}
+        run: |
+          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+          export PATH=${PATH}:${PWD}/depot_tools
+          
+          fetch --nohooks webrtc_ios
+          
+          cd src
+          
+          git checkout ${HASH}
+          
+          gclient sync
+
+          export OUTPUT_DIR=${TMPDIR}${HASH}
+
+          gn gen ${OUTPUT_DIR}/mac_x64 --args='target_os="mac" target_cpu="x64" is_component_build=false is_debug=false rtc_libvpx_build_vp9=false enable_stripping=true rtc_enable_protobuf=false'
+
+          ninja -C ${OUTPUT_DIR}/mac_x64 sdk:mac_framework_objc
+
+          xcodebuild -create-xcframework \
+            -framework ${OUTPUT_DIR}/mac_x64/WebRTC.framework \
+            -output ${OUTPUT_DIR}/WebRTC.xcframework
+
+          cd ${OUTPUT_DIR}
+
+          git init
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git pull origin main
+
+          git checkout -b release/${HASH}
+          git add WebRTC.xcframework
+          git commit -m "WebRTC release ${HASH}" -- WebRTC.xcframework
+          git push --set-upstream origin "release/${HASH}"

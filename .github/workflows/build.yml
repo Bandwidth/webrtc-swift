@@ -23,19 +23,25 @@ jobs:
           git checkout ${HASH}
           
           gclient sync
-
+          
           export OUTPUT_DIR=${TMPDIR}${HASH}
-
+          
           gn gen ${OUTPUT_DIR}/mac_x64 --args='target_os="mac" target_cpu="x64" is_component_build=false is_debug=false rtc_libvpx_build_vp9=false enable_stripping=true rtc_enable_protobuf=false'
+          gn gen ${OUTPUT_DIR}/ios_x64 --args='target_os="ios" target_cpu="x64" is_component_build=false use_xcode_clang=true is_debug=true ios_deployment_target="10.0" rtc_libvpx_build_vp9=false use_goma=false ios_enable_code_signing=false enable_stripping=true rtc_enable_protobuf=false enable_ios_bitcode=false treat_warnings_as_errors=false'
+          gn gen ${OUTPUT_DIR}/ios_arm64 --args='target_os="ios" target_cpu="arm64" is_component_build=false use_xcode_clang=true is_debug=false ios_deployment_target="10.0" rtc_libvpx_build_vp9=false use_goma=false ios_enable_code_signing=false enable_stripping=true rtc_enable_protobuf=false enable_ios_bitcode=false treat_warnings_as_errors=false'
 
           ninja -C ${OUTPUT_DIR}/mac_x64 sdk:mac_framework_objc
-
+          ninja -C ${OUTPUT_DIR}/ios_x64 sdk:framework_objc
+          ninja -C ${OUTPUT_DIR}/ios_arm64 sdk:framework_objc
+          
           xcodebuild -create-xcframework \
             -framework ${OUTPUT_DIR}/mac_x64/WebRTC.framework \
+            -framework ${OUTPUT_DIR}/ios_x64/WebRTC.framework \
+            -framework ${OUTPUT_DIR}/ios_arm64/WebRTC.framework \
             -output ${OUTPUT_DIR}/WebRTC.xcframework
-
+          
           cd ${OUTPUT_DIR}
-
+          
           git init
           git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git pull origin main

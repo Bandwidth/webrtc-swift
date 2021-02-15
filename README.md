@@ -14,7 +14,7 @@ Add https://github.com/Bandwidth/webrtc-swift.git as a dependency to your Packag
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Bandwidth/webrtc-swift.git", .upToNextMajor(from: "1.0.0"))
+    .package(name: "webrtc", url: "https://github.com/Bandwidth/webrtc-swift.git", .upToNextMajor(from: "1.0.0"))
 ]
 ```
 
